@@ -1,0 +1,313 @@
+---
+title: "The Post-Modeling Model to Fix the Model"
+author: "Max Kuhn (Posit)"
+---
+
+```{r}
+#| label: setup
+#| include: false
+#| cache: false
+
+library(tidymodels)
+library(probably)
+library(discrim)
+library(doMC)
+
+tidymodels_prefer()
+theme_set(theme_bw())
+options(pillar.advice = FALSE, pillar.min_title_chars = Inf)
+registerDoMC(cores = parallel::detectCores(logical = TRUE))
+
+
+data(cells)
+cells$case <- NULL
+all_data <- cells
+all_data$class <- ifelse(all_data$class == "PS", "event", "no_event")
+all_data$class <- factor(all_data$class)
+
+set.seed(8928)
+split <- initial_split(all_data, strata = class)
+data_tr <- training(split)
+data_te <- testing(split)
+data_rs <- vfold_cv(data_tr, strata = class)
+
+bayes_wflow <-
+  workflow() %>%
+  add_formula(class ~ .) %>%
+  add_model(naive_Bayes())
+
+cls_met <- metric_set(roc_auc, brier_class)
+ctrl <- control_resamples(save_pred = TRUE)
+
+bayes_res <-
+  bayes_wflow %>%
+  fit_resamples(data_rs, metrics = cls_met, control = ctrl)
+
+# ------------------------------------------------------------------------------
+
+hexes <- function(..., size = 64) {
+  x <- c(...)
+  x <- sort(unique(x), decreasing = TRUE)
+  right <- (seq_along(x) - 1) * size
+
+  res <- glue::glue(
+    '![](hexes/<x>.png){.absolute top=-20 right=<right> width="<size>" height="<size * 1.16>"}',
+    .open = "<", .close = ">"
+  )
+
+  paste0(res, collapse = " ")
+}
+```
+
+## An unparalleled work of staggering genius.
+
+
+:::: {.columns}
+
+::: {.column width="50%"}
+After a long campaign of data analysis, one model was able to conquer the rest: Naive Bayes!
+
+
+With `r format(nrow(data_tr), big.mark = ",")` training set samples and `r ncol(data_tr) - 1` predictors, our amazing model has an area under the ROC curve of `r round(collect_metrics(bayes_res)$mean[2], 2)`!
+
+<br> 
+
+_What could go wrong?_
+:::
+
+::: {.column width="50%"}
+
+```{r}
+#| label: roc-curve
+#| echo: false
+#| out-width: 100%
+#| fig-width: 4
+#| fig-height: 4
+#| fig.align: "center"
+
+collect_predictions(bayes_res, summarize = TRUE) %>% 
+  roc_curve(class, .pred_event) %>% 
+  autoplot()
+```
+:::
+
+::::
+
+
+## `r emo::ji("scream")`
+
+
+:::: {.columns}
+
+::: {.column width="50%"}
+Most predictions are zero or one? 
+
+In a lot of cases, we are confidently incorrect. 
+
+This seems... bad. 
+
+<br>
+
+The model is able to separate the classes but the probabilities **are not realistic**. 
+
+They aren't **well-calibrated**. 
+:::
+
+::: {.column width="50%"}
+```{r}
+#| label: prog-hist
+#| echo: false
+#| out-width: 100%
+#| fig-width: 4
+#| fig-height: 4
+#| fig.align: "center"
+
+collect_predictions(bayes_res) %>%
+  ggplot(aes(.pred_event)) +
+  geom_histogram(col = "white", bins = 40) +
+  facet_wrap(~ class, ncol = 1) +
+  geom_rug(col = "blue", alpha = 1 / 2) + 
+  labs(x = "Probability Estimate of Event")
+```
+
+:::
+
+::::
+
+
+## Some tidymodels code `r hexes("tidymodels", "discrim")`
+
+```{r}
+#| label: code
+#| eval: false
+#| code-line-numbers: "|5,16-18"
+
+set.seed(8928)
+split <- initial_split(all_data, strata = class)
+data_tr <- training(split)
+data_te <- testing(split)
+data_rs <- vfold_cv(data_tr, strata = class)
+
+bayes_wflow <-
+  workflow() %>%
+  add_formula(class ~ .) %>%
+  add_model(naive_Bayes())
+
+cls_met <- metric_set(roc_auc, brier_class)
+ctrl <- control_resamples(save_pred = TRUE)
+
+# The resampling results from 10-fold cross-validation:
+bayes_res <-
+  bayes_wflow %>%
+  fit_resamples(data_rs, metrics = cls_met, control = ctrl)
+```  
+
+## The probably package `r hexes("probably")`
+
+`probably` has functions for post-processing model results, including: 
+
+ - equivocal zones
+ - probability threshold optimization
+ 
+(and in the most recent version)
+
+ - _conformal inference prediction intervals_
+ - _calibration visualization and mitigation_ (Edgar Ruiz did most of this!)
+
+We'll look at the calibration tools today.  There are several tools for assessing calibration
+
+## Conventional calibration plots `r hexes("probably")`
+
+```{r}
+#| label: plot-breaks
+#| echo: true
+#| out-width: 40%
+#| fig-width: 4
+#| fig-height: 4
+#| fig-align: center
+
+library(probably)
+cal_plot_breaks(bayes_res)
+```
+
+## Moving window calibration plots `r hexes("probably")`
+
+```{r}
+#| label: plot-windows
+#| echo: true
+#| out-width: 40%
+#| fig-width: 4
+#| fig-height: 4
+#| fig-align: center
+
+cal_plot_windowed(bayes_res, step_size = 0.025)
+```
+
+## Logistic (GAM) calibration plots `r hexes("probably")`
+
+```{r}
+#| label: plot-logitic
+#| echo: true
+#| out-width: 40%
+#| fig-width: 4
+#| fig-height: 4
+#| fig-align: center
+
+cal_plot_logistic(bayes_res)
+```
+
+## What can we do about it? 
+
+If we don't have a model with better separation and calibration, we can post-process the predictions.
+
+* Logistic regression
+* Isotonic regression
+* Isotonic regression (resampled)
+* Beta calibration
+
+These models can estimate the trends and "un-bork" the predictions. 
+
+## What data can we use? 
+
+_Ideally_, we would reserve some data to estimate the mis-calibration patterns. 
+
+If not, we could use the holdout predictions from resampling (or a validation set). This is a little risky but doable. 
+
+<br> 
+
+The Brier Score is a nice performance metric that can measure effectiveness and calibration.
+
+For 2 classes:
+
+- Brier Score = 0 💯 
+- Brier Score = 1/2 😢
+
+## With and without Beta calibration
+
+```{r}
+#| label: val-iso-boot
+cal_validate_beta(bayes_res, metrics = cls_met) %>% 
+  collect_metrics() %>% 
+  arrange(.metric)
+
+beta_cal <- cal_estimate_beta(bayes_res)
+```
+
+<br>
+
+Many calibration methods do not modify the ordering of the probabilities substantially. 
+
+Metrics like the ROC AUC won't change that much. 
+
+## Test set results
+
+Raw
+
+```{r}
+#| label: test-mod
+#| warning: false
+nb_fit <- fit(bayes_wflow, data_tr)
+nb_pred <- augment(nb_fit, data_te)
+
+nb_pred %>% cls_met(class, .pred_event)
+```
+
+Calibrated
+
+```{r}
+#| label: test-cal
+#| warning: false
+nb_pred_fixed <- nb_pred %>% cal_apply(beta_cal)
+
+nb_pred_fixed %>% cls_met(class, .pred_event)
+```
+
+## Test set results
+
+
+```{r}
+#| label: plot-windows-test
+#| echo: true
+#| out-width: 40%
+#| fig-width: 4
+#| fig-height: 4
+#| fig-align: center
+
+nb_pred_fixed %>% cal_plot_windowed(class, .pred_event, step_size = 0.025)
+```
+
+## What's next?
+
+We will be updating workflow objects with _post-processors_ towards the end of the year.
+
+This means that we can:
+
+ - bind the model fit with pre- and post-processing results
+ - automatically calibrate new results using `predict(workflow, new_data)`. 
+
+## Thanks
+
+Again, Edgar Ruiz did the majority of the work on calibration methods!
+
+
+

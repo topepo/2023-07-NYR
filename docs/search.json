@@ -1,0 +1,100 @@
+[
+  {
+    "objectID": "index.html#an-unparalleled-work-of-staggering-genius.",
+    "href": "index.html#an-unparalleled-work-of-staggering-genius.",
+    "title": "The Post-Modeling Model to Fix the Model",
+    "section": "An unparalleled work of staggering genius.",
+    "text": "An unparalleled work of staggering genius.\n\n\nAfter a long campaign of data analysis, one model was able to conquer the rest: Naive Bayes!\nWith 1,514 training set samples and 56 predictors, our amazing model has an area under the ROC curve of 0.86!\n\nWhat could go wrong?"
+  },
+  {
+    "objectID": "index.html#section",
+    "href": "index.html#section",
+    "title": "The Post-Modeling Model to Fix the Model",
+    "section": "😱",
+    "text": "😱\n\n\nMost predictions are zero or one?\nIn a lot of cases, we are confidently incorrect.\nThis seems… bad.\n\nThe model is able to separate the classes but the probabilities are not realistic.\nThey aren’t well-calibrated."
+  },
+  {
+    "objectID": "index.html#some-tidymodels-code",
+    "href": "index.html#some-tidymodels-code",
+    "title": "The Post-Modeling Model to Fix the Model",
+    "section": "Some tidymodels code  ",
+    "text": "Some tidymodels code  \n\nset.seed(8928)\nsplit &lt;- initial_split(all_data, strata = class)\ndata_tr &lt;- training(split)\ndata_te &lt;- testing(split)\ndata_rs &lt;- vfold_cv(data_tr, strata = class)\n\nbayes_wflow &lt;-\n  workflow() %&gt;%\n  add_formula(class ~ .) %&gt;%\n  add_model(naive_Bayes())\n\ncls_met &lt;- metric_set(roc_auc, brier_class)\nctrl &lt;- control_resamples(save_pred = TRUE)\n\n# The resampling results from 10-fold cross-validation:\nbayes_res &lt;-\n  bayes_wflow %&gt;%\n  fit_resamples(data_rs, metrics = cls_met, control = ctrl)"
+  },
+  {
+    "objectID": "index.html#the-probably-package",
+    "href": "index.html#the-probably-package",
+    "title": "The Post-Modeling Model to Fix the Model",
+    "section": "The probably package ",
+    "text": "The probably package \nprobably has functions for post-processing model results, including:\n\nequivocal zones\nprobability threshold optimization\n\n(and in the most recent version)\n\nconformal inference prediction intervals\ncalibration visualization and mitigation (Edgar Ruiz did most of this!)\n\nWe’ll look at the calibration tools today. There are several tools for assessing calibration"
+  },
+  {
+    "objectID": "index.html#conventional-calibration-plots",
+    "href": "index.html#conventional-calibration-plots",
+    "title": "The Post-Modeling Model to Fix the Model",
+    "section": "Conventional calibration plots ",
+    "text": "Conventional calibration plots \n\nlibrary(probably)\ncal_plot_breaks(bayes_res)"
+  },
+  {
+    "objectID": "index.html#moving-window-calibration-plots",
+    "href": "index.html#moving-window-calibration-plots",
+    "title": "The Post-Modeling Model to Fix the Model",
+    "section": "Moving window calibration plots ",
+    "text": "Moving window calibration plots \n\ncal_plot_windowed(bayes_res, step_size = 0.025)"
+  },
+  {
+    "objectID": "index.html#logistic-gam-calibration-plots",
+    "href": "index.html#logistic-gam-calibration-plots",
+    "title": "The Post-Modeling Model to Fix the Model",
+    "section": "Logistic (GAM) calibration plots ",
+    "text": "Logistic (GAM) calibration plots \n\ncal_plot_logistic(bayes_res)"
+  },
+  {
+    "objectID": "index.html#what-can-we-do-about-it",
+    "href": "index.html#what-can-we-do-about-it",
+    "title": "The Post-Modeling Model to Fix the Model",
+    "section": "What can we do about it?",
+    "text": "What can we do about it?\nIf we don’t have a model with better separation and calibration, we can post-process the predictions.\n\nLogistic regression\nIsotonic regression\nIsotonic regression (resampled)\nBeta calibration\n\nThese models can estimate the trends and “un-bork” the predictions."
+  },
+  {
+    "objectID": "index.html#what-data-can-we-use",
+    "href": "index.html#what-data-can-we-use",
+    "title": "The Post-Modeling Model to Fix the Model",
+    "section": "What data can we use?",
+    "text": "What data can we use?\nIdeally, we would reserve some data to estimate the mis-calibration patterns.\nIf not, we could use the holdout predictions from resampling (or a validation set). This is a little risky but doable.\n\nThe Brier Score is a nice performance metric that can measure effectiveness and calibration.\nFor 2 classes:\n\nBrier Score = 0 💯\nBrier Score = 1/2 😢"
+  },
+  {
+    "objectID": "index.html#with-and-without-beta-calibration",
+    "href": "index.html#with-and-without-beta-calibration",
+    "title": "The Post-Modeling Model to Fix the Model",
+    "section": "With and without Beta calibration",
+    "text": "With and without Beta calibration\n\ncal_validate_beta(bayes_res, metrics = cls_met) %&gt;% \n  collect_metrics() %&gt;% \n  arrange(.metric)\n#&gt; # A tibble: 4 × 7\n#&gt;   .metric     .type        .estimator  mean     n std_err .config\n#&gt;   &lt;chr&gt;       &lt;chr&gt;        &lt;chr&gt;      &lt;dbl&gt; &lt;int&gt;   &lt;dbl&gt; &lt;chr&gt;  \n#&gt; 1 brier_class uncalibrated binary     0.201    10 0.0102  config \n#&gt; 2 brier_class calibrated   binary     0.145    10 0.00450 config \n#&gt; 3 roc_auc     uncalibrated binary     0.857    10 0.00945 config \n#&gt; 4 roc_auc     calibrated   binary     0.857    10 0.00942 config\n\nbeta_cal &lt;- cal_estimate_beta(bayes_res)\n\n\nMany calibration methods do not modify the ordering of the probabilities substantially.\nMetrics like the ROC AUC won’t change that much."
+  },
+  {
+    "objectID": "index.html#test-set-results",
+    "href": "index.html#test-set-results",
+    "title": "The Post-Modeling Model to Fix the Model",
+    "section": "Test set results",
+    "text": "Test set results\nRaw\n\nnb_fit &lt;- fit(bayes_wflow, data_tr)\nnb_pred &lt;- augment(nb_fit, data_te)\n\nnb_pred %&gt;% cls_met(class, .pred_event)\n#&gt; # A tibble: 2 × 3\n#&gt;   .metric     .estimator .estimate\n#&gt;   &lt;chr&gt;       &lt;chr&gt;          &lt;dbl&gt;\n#&gt; 1 roc_auc     binary         0.841\n#&gt; 2 brier_class binary         0.225\n\nCalibrated\n\nnb_pred_fixed &lt;- nb_pred %&gt;% cal_apply(beta_cal)\n\nnb_pred_fixed %&gt;% cls_met(class, .pred_event)\n#&gt; # A tibble: 2 × 3\n#&gt;   .metric     .estimator .estimate\n#&gt;   &lt;chr&gt;       &lt;chr&gt;          &lt;dbl&gt;\n#&gt; 1 roc_auc     binary         0.841\n#&gt; 2 brier_class binary         0.152"
+  },
+  {
+    "objectID": "index.html#test-set-results-1",
+    "href": "index.html#test-set-results-1",
+    "title": "The Post-Modeling Model to Fix the Model",
+    "section": "Test set results",
+    "text": "Test set results\n\nnb_pred_fixed %&gt;% cal_plot_windowed(class, .pred_event, step_size = 0.025)"
+  },
+  {
+    "objectID": "index.html#whats-next",
+    "href": "index.html#whats-next",
+    "title": "The Post-Modeling Model to Fix the Model",
+    "section": "What’s next?",
+    "text": "What’s next?\nWe will be updating workflow objects with post-processors towards the end of the year.\nThis means that we can:\n\nbind the model fit with pre- and post-processing results\nautomatically calibrate new results using predict(workflow, new_data)."
+  },
+  {
+    "objectID": "index.html#thanks",
+    "href": "index.html#thanks",
+    "title": "The Post-Modeling Model to Fix the Model",
+    "section": "Thanks",
+    "text": "Thanks\nAgain, Edgar Ruiz did the majority of the work on calibration methods!\n\n\nhttps://github.com/topepo/2023-07-NYR"
+  }
+]

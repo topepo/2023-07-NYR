@@ -1,0 +1,29 @@
+project:
+  type: website
+  render:
+    - "index.qmd"
+  output-dir: docs
+
+website:
+  title: "The Post-Modeling Model to Fix the Model"
+  site-url: https://topepo.github.io/2023-07-NYR
+  repo-url: https://github.com/topepo/2023-07-NYR
+
+format:
+  revealjs:
+    slide-number: true
+    footer: <https://github.com/topepo/2023-07-NYR>
+    include-before-body: header.html
+    include-after-body: footer-annotations.html
+    theme: [default, tidymodels.scss]
+    width: 1280
+    height: 720
+
+knitr:
+  opts_chunk:
+    echo: true
+    collapse: true
+    comment: "#>"
+    fig.path: "figures/"
+
+fig-format: svg
