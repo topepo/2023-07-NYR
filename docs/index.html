@@ -484,42 +484,72 @@ Max Kuhn (Posit)
 </ul>
 <p>We’ll look at the calibration tools today. There are several tools for assessing calibration</p>
 </section>
+<section id="assessing-calibration-issues" class="slide level2">
+<h2>Assessing calibration issues</h2>
+
+<img data-src="figures/prog-hist-again-1.svg" style="width:80.0%" class="r-stretch quarto-figure-center"></section>
 <section id="conventional-calibration-plots" class="slide level2">
 <h2>Conventional calibration plots <img data-src="hexes/probably.png" class="absolute" style="top: -20px; right: 0px; width: 64px; height: 74.24px; "></h2>
-<div class="cell" data-layout-align="center">
+<div class="columns">
+<div class="column" style="width:50%;">
+<div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="fu">library</span>(probably)</span>
 <span id="cb2-2"><a href="#cb2-2"></a><span class="fu">cal_plot_breaks</span>(bayes_res)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><br></p>
+<p>There are also methods for data frames of predictions.</p>
+</div><div class="column" style="width:50%;">
+<div class="cell" data-layout-align="center">
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="figures/plot-breaks-1.svg" style="width:40.0%"></p>
+<p><img data-src="figures/plot-breaks-1.svg" style="width:100.0%"></p>
 </figure>
+</div>
+</div>
 </div>
 </div>
 </div>
 </section>
 <section id="moving-window-calibration-plots" class="slide level2">
 <h2>Moving window calibration plots <img data-src="hexes/probably.png" class="absolute" style="top: -20px; right: 0px; width: 64px; height: 74.24px; "></h2>
+<div class="columns">
+<div class="column" style="width:50%;">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a>bayes_res <span class="sc">%&gt;%</span> </span>
+<span id="cb3-2"><a href="#cb3-2"></a>  <span class="fu">cal_plot_windowed</span>(</span>
+<span id="cb3-3"><a href="#cb3-3"></a>    <span class="at">step_size =</span> <span class="fl">0.025</span></span>
+<span id="cb3-4"><a href="#cb3-4"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div><div class="column" style="width:50%;">
 <div class="cell" data-layout-align="center">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="fu">cal_plot_windowed</span>(bayes_res, <span class="at">step_size =</span> <span class="fl">0.025</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="figures/plot-windows-1.svg" style="width:40.0%"></p>
+<p><img data-src="figures/plot-window-1.svg" style="width:100.0%"></p>
 </figure>
+</div>
+</div>
 </div>
 </div>
 </div>
 </section>
 <section id="logistic-gam-calibration-plots" class="slide level2">
 <h2>Logistic (GAM) calibration plots <img data-src="hexes/probably.png" class="absolute" style="top: -20px; right: 0px; width: 64px; height: 74.24px; "></h2>
-<div class="cell" data-layout-align="center">
+<div class="columns">
+<div class="column" style="width:50%;">
+<div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="fu">cal_plot_logistic</span>(bayes_res)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div><div class="column" style="width:50%;">
+<div class="cell" data-layout-align="center">
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="figures/plot-logitic-1.svg" style="width:40.0%"></p>
+<p><img data-src="figures/plot-logitic-1.svg" style="width:100.0%"></p>
 </figure>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -563,13 +593,9 @@ Max Kuhn (Posit)
 <span id="cb5-11"><a href="#cb5-11"></a></span>
 <span id="cb5-12"><a href="#cb5-12"></a>beta_cal <span class="ot">&lt;-</span> <span class="fu">cal_estimate_beta</span>(bayes_res)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p><br></p>
-<p>Many calibration methods do not modify the ordering of the probabilities substantially.</p>
-<p>Metrics like the ROC AUC won’t change that much.</p>
 </section>
-<section id="test-set-results" class="slide level2">
-<h2>Test set results</h2>
-<p>Raw</p>
+<section id="test-set-results---raw" class="slide level2">
+<h2>Test set results - Raw</h2>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a>nb_fit <span class="ot">&lt;-</span> <span class="fu">fit</span>(bayes_wflow, data_tr)</span>
 <span id="cb6-2"><a href="#cb6-2"></a>nb_pred <span class="ot">&lt;-</span> <span class="fu">augment</span>(nb_fit, data_te)</span>
@@ -581,7 +607,9 @@ Max Kuhn (Posit)
 <span id="cb6-8"><a href="#cb6-8"></a><span class="co">#&gt; 1 roc_auc     binary         0.841</span></span>
 <span id="cb6-9"><a href="#cb6-9"></a><span class="co">#&gt; 2 brier_class binary         0.225</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Calibrated</p>
+</section>
+<section id="test-set-results---calibrated" class="slide level2">
+<h2>Test set results - Calibrated</h2>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a>nb_pred_fixed <span class="ot">&lt;-</span> nb_pred <span class="sc">%&gt;%</span> <span class="fu">cal_apply</span>(beta_cal)</span>
 <span id="cb7-2"><a href="#cb7-2"></a></span>
@@ -593,13 +621,31 @@ Max Kuhn (Posit)
 <span id="cb7-8"><a href="#cb7-8"></a><span class="co">#&gt; 2 brier_class binary         0.152</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-<section id="test-set-results-1" class="slide level2">
+<section id="test-set-results" class="slide level2">
 <h2>Test set results</h2>
+<div class="columns">
+<div class="column" style="width:50%;">
 <div class="cell" data-layout-align="center">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a>nb_pred_fixed <span class="sc">%&gt;%</span> <span class="fu">cal_plot_windowed</span>(class, .pred_event, <span class="at">step_size =</span> <span class="fl">0.025</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a>nb_pred_fixed <span class="sc">%&gt;%</span> </span>
+<span id="cb8-2"><a href="#cb8-2"></a>  <span class="fu">cal_plot_windowed</span>(</span>
+<span id="cb8-3"><a href="#cb8-3"></a>    class, </span>
+<span id="cb8-4"><a href="#cb8-4"></a>    .pred_event, </span>
+<span id="cb8-5"><a href="#cb8-5"></a>    <span class="at">step_size =</span> <span class="fl">0.025</span></span>
+<span id="cb8-6"><a href="#cb8-6"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<img data-src="figures/plot-windows-test-1.svg" style="width:40.0%" class="r-stretch quarto-figure-center"></section>
+</div><div class="column" style="width:50%;">
+<div class="cell" data-layout-align="center">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="figures/plot-windows-test-1.svg" style="width:100.0%"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
 <section id="whats-next" class="slide level2">
 <h2>What’s next?</h2>
 <p>We will be updating workflow objects with <em>post-processors</em> towards the end of the year.</p>

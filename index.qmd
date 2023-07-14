@@ -127,7 +127,8 @@ collect_predictions(bayes_res) %>%
   geom_histogram(col = "white", bins = 40) +
   facet_wrap(~ class, ncol = 1) +
   geom_rug(col = "blue", alpha = 1 / 2) + 
-  labs(x = "Probability Estimate of Event")
+  labs(x = "Probability Estimate of Event") +
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 6))
 ```
 
 :::
@@ -176,12 +177,53 @@ bayes_res <-
 
 We'll look at the calibration tools today.  There are several tools for assessing calibration
 
-## Conventional calibration plots `r hexes("probably")`
+## Assessing calibration issues
 
 ```{r}
-#| label: plot-breaks
+#| label: prog-hist-again
+#| echo: false
+#| out-width: 80%
+#| fig-width: 4
+#| fig-height: 4
+#| fig.align: "center"
+
+collect_predictions(bayes_res) %>%
+  ggplot(aes(.pred_event)) +
+  geom_histogram(col = "white", bins = 40) +
+  facet_wrap(~ class, ncol = 1) +
+  geom_rug(col = "blue", alpha = 1 / 2) + 
+  labs(x = "Probability Estimate of Event") +
+  geom_vline(xintercept = c(0, .1), lty = 2, col = "darkred") +
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 6))
+```
+
+## Conventional calibration plots `r hexes("probably")`
+
+
+:::: {.columns}
+
+::: {.column width="50%"}
+```{r}
+#| label: plot-breaks-code
 #| echo: true
-#| out-width: 40%
+#| eval: false
+
+library(probably)
+cal_plot_breaks(bayes_res)
+```
+
+<br> 
+
+There are also methods for data frames of predictions. 
+
+
+:::
+
+::: {.column width="50%"}
+```{r}
+#| label: plot-breaks
+#| echo: false
+#| out-width: 100%
 #| fig-width: 4
 #| fig-height: 4
 #| fig-align: center
@@ -190,12 +232,36 @@ library(probably)
 cal_plot_breaks(bayes_res)
 ```
 
+:::
+
+::::
+
+
+
+
 ## Moving window calibration plots `r hexes("probably")`
 
+:::: {.columns}
+
+::: {.column width="50%"}
 ```{r}
-#| label: plot-windows
+#| label: plot-window-code
 #| echo: true
-#| out-width: 40%
+#| eval: false
+
+bayes_res %>% 
+  cal_plot_windowed(
+    step_size = 0.025
+  )
+```
+
+:::
+
+::: {.column width="50%"}
+```{r}
+#| label: plot-window
+#| echo: false
+#| out-width: 100%
 #| fig-width: 4
 #| fig-height: 4
 #| fig-align: center
@@ -203,18 +269,43 @@ cal_plot_breaks(bayes_res)
 cal_plot_windowed(bayes_res, step_size = 0.025)
 ```
 
+:::
+
+::::
+
+
+
 ## Logistic (GAM) calibration plots `r hexes("probably")`
 
+
+:::: {.columns}
+
+::: {.column width="50%"}
+```{r}
+#| label: plot-logitic-code
+#| echo: true
+#| eval: false
+
+cal_plot_logistic(bayes_res)
+```
+
+:::
+
+::: {.column width="50%"}
 ```{r}
 #| label: plot-logitic
-#| echo: true
-#| out-width: 40%
+#| echo: false
+#| out-width: 100%
 #| fig-width: 4
 #| fig-height: 4
 #| fig-align: center
 
 cal_plot_logistic(bayes_res)
 ```
+
+:::
+
+::::
 
 ## What can we do about it? 
 
@@ -253,15 +344,9 @@ cal_validate_beta(bayes_res, metrics = cls_met) %>%
 beta_cal <- cal_estimate_beta(bayes_res)
 ```
 
-<br>
 
-Many calibration methods do not modify the ordering of the probabilities substantially. 
+## Test set results - Raw
 
-Metrics like the ROC AUC won't change that much. 
-
-## Test set results
-
-Raw
 
 ```{r}
 #| label: test-mod
@@ -272,7 +357,7 @@ nb_pred <- augment(nb_fit, data_te)
 nb_pred %>% cls_met(class, .pred_event)
 ```
 
-Calibrated
+## Test set results - Calibrated
 
 ```{r}
 #| label: test-cal
@@ -284,17 +369,43 @@ nb_pred_fixed %>% cls_met(class, .pred_event)
 
 ## Test set results
 
+:::: {.columns}
 
+::: {.column width="50%"}
+```{r}
+#| label: plot-windows-test-code
+#| eval: false
+#| out-width: 40%
+#| fig-width: 4
+#| fig-height: 4
+#| fig-align: center
+
+nb_pred_fixed %>% 
+  cal_plot_windowed(
+    class, 
+    .pred_event, 
+    step_size = 0.025
+  )
+```
+
+:::
+
+::: {.column width="50%"}
 ```{r}
 #| label: plot-windows-test
-#| echo: true
-#| out-width: 40%
+#| echo: false
+#| out-width: 100%
 #| fig-width: 4
 #| fig-height: 4
 #| fig-align: center
 
 nb_pred_fixed %>% cal_plot_windowed(class, .pred_event, step_size = 0.025)
 ```
+
+:::
+
+::::
+
 
 ## What's next?
 
